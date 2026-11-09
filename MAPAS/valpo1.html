@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valparaíso Histórico - Catálogo de Mapas e Historias</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#d97706',
+                            amber: '#f59e0b',
+                            navy: '#0f172a',
+                            slate: '#1e293b',
+                            card: '#111827',
+                            border: '#374151'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Cinzel', 'serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom map tile styling and Leaflet visual refinements */
+        .leaflet-container {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            color: #f3f4f6;
+            border: 1px solid #d97706;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .leaflet-popup-tip {
+            background: #1e293b;
+            border: 1px solid #d97706;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #d97706;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-body min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- HEADER & HERO SECTION -->
+    <header class="relative border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 px-4 py-8 md:py-12">
+        <div class="max-w-7xl mx-auto text-center space-y-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                <i class="fa-solid me-1 fa-compass"></i> Cartografía Histórica Georreferenciada
+            </div>
+            <h1 class="font-heading text-3xl md:text-5xl lg:text-6xl font-extrabold text-amber-400 tracking-tight drop-shadow-md">
+                VALPARAÍSO HISTÓRICO
+            </h1>
+            <p class="max-w-3xl mx-auto text-slate-300 text-sm md:text-base font-light leading-relaxed">
+                Colección interactiva basada en el ArcGIS StoryMap de Valparaíso. Explore la evolución demográfica, infraestructura, transportes, la catástrofe del terremoto e incendio de 1906, las aseguradoras y la zona UNESCO a través de 9 visores cartográficos.
+            </p>
+
+            <!-- STATS STRIP -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto pt-4 text-left">
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 uppercase font-bold">Total Visores</div>
+                        <div class="text-lg font-bold text-slate-100">9 Mapas</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 uppercase font-bold">Período Histórico</div>
+                        <div class="text-lg font-bold text-slate-100">1897 - 1949</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-volcano"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 uppercase font-bold">Sismo 1906</div>
+                        <div class="text-lg font-bold text-slate-100">8.2 Mw / 3 Días Fuego</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-landmark"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 uppercase font-bold">Patrimonio Mundial</div>
+                        <div class="text-lg font-bold text-slate-100">UNESCO 2003</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="sticky top-0 z-40 glass-panel border-b border-slate-800 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <!-- Search input -->
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" onkeyup="filterMaps()" placeholder="Buscar mapas, hitos, cerros..." 
+                    class="w-full bg-slate-900 border border-slate-700 focus:border-amber-500 text-slate-100 pl-9 pr-4 py-2 rounded-lg text-sm outline-none transition">
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 custom-scrollbar text-xs">
+                <button onclick="setCategory('all')" class="cat-btn active px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-amber-500 text-slate-950 font-semibold" data-cat="all">Todas las capas</button>
+                <button onclick="setCategory('demografia')" class="cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700" data-cat="demografia">Demografía</button>
+                <button onclick="setCategory('transporte')" class="cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700" data-cat="transporte">Equipamiento & Transporte</button>
+                <button onclick="setCategory('desastre')" class="cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700" data-cat="desastre">Sismo 1906 & Salud</button>
+                <button onclick="setCategory('seguros')" class="cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700" data-cat="seguros">Seguros & Riesgo</button>
+                <button onclick="setCategory('patrimonio')" class="cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700" data-cat="patrimonio">Patrimonio & Visor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TABLE CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+        <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-2xl">
+            <table class="w-full text-left border-collapse" id="mapsTable">
+                <thead>
+                    <tr class="bg-slate-900/90 text-amber-400 border-b border-slate-800 text-xs uppercase font-heading tracking-wider hidden md:table-row">
+                        <th class="py-4 px-6 w-1/2">
+                            <i class="fa-solid fa-map me-2"></i>Visor Cartográfico Interactivo
+                        </th>
+                        <th class="py-4 px-6 w-1/2">
+                            <i class="fa-solid fa-file-lines me-2"></i>Contexto Histórico y Descripción
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80" id="mapsContainer">
+                    <!-- Map rows rendered dynamically via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- FULLSCREEN MODAL FOR MAPS -->
+    <div id="fullMapModal" class="fixed inset-0 z-50 bg-slate-950/95 hidden flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900">
+            <h3 id="modalMapTitle" class="font-heading text-lg text-amber-400 font-bold">Mapa en Pantalla Completa</h3>
+            <button onclick="closeFullscreenModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm flex items-center gap-2">
+                <i class="fa-solid fa-xmark"></i> Cerrar
+            </button>
+        </div>
+        <div id="modalMapContainer" class="flex-grow w-full h-full relative"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-8 px-4 text-center text-slate-500 text-xs">
+        <div class="max-w-7xl mx-auto space-y-2">
+            <p class="font-heading text-slate-400 text-sm">VALPARAÍSO HISTÓRICO • ARCGIS STORYMAP CLONE</p>
+            <p>Fuentes cartográficas: Francisco E. Garnham (1897), Censo de Población (1907), Dr. José Grossi (1907), Asociación de Aseguradores de Chile (1949), UNESCO (2003).</p>
+            <p>© Georreferenciación y Catálogo Digital para fines académicos e históricos.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Array of map data objects corresponding to the StoryMap contents
+        const mapsData = [
+            {
+                id: "map1",
+                category: "demografia",
+                year: "1907",
+                title: "1. Subdelegaciones y Demografía (1907)",
+                source: "VII Censo General de Población de Chile (1907)",
+                author: "Oficina Central de Estadística & Gobernación de Valparaíso",
+                description: "Este visor analiza la estructura poblacional de Valparaíso a partir del Censo de 1907. Muestra la articulación administrativa del puerto dividida en Subdelegaciones urbanas (Puerto, Cordillera, Serrano, Cruz Reyes, Bellavista, Barón y Almendral). Revela la fuerte concentración demográfica en los cerros frente al plan, la masa de inmigrantes británicos, italianos y españoles en los cerros Alegre y Concepción, y la segregación laboral de la época.",
+                stats: [
+                    { label: "Población Total", val: "162.447 hab." },
+                    { label: "Subdelegaciones", val: "12 Zonas" },
+                    { label: "Población Extranjera", val: "11,4%" }
+                ],
+                center: [-33.0472, -71.6127],
+                zoom: 14,
+                pois: [
+                    { name: "Subdelegación El Puerto", lat: -33.0360, lng: -71.6300, desc: "Alta densidad comercial y marinera. Concentración de oficinas navieras." },
+                    { name: "Subdelegación Cerro Alegre", lat: -33.0402, lng: -71.6290, desc: "Residencia preferente de familias británicas y alemanas." },
+                    { name: "Subdelegación El Almendral", lat: -33.0458, lng: -71.6160, desc: "Sector plano con alta densidad residencial y comercial popular." }
+                ],
+                polygons: [
+                    {
+                        name: "Subdelegación Almendral",
+                        color: "#ef4444",
+                        coords: [
+                            [-33.042, -71.621],
+                            [-33.049, -71.619],
+                            [-33.047, -71.605],
+                            [-33.041, -71.607]
+                        ]
+                    },
+                    {
+                        name: "Subdelegación Puerto & Cerros",
+                        color: "#f59e0b",
+                        coords: [
+                            [-33.033, -71.634],
+                            [-33.042, -71.632],
+                            [-33.043, -71.622],
+                            [-33.035, -71.625]
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "map2",
+                category: "transporte",
+                year: "1897",
+                title: "2. Equipamiento Urbano Histórico (1897)",
+                source: "Cartografía de Francisco E. Garnham (1897)",
+                author: "Francisco E. Garnham / Imprenta Guía del Comercio",
+                description: "Representación cartográfica de la red de equipamientos urbanos (edificios públicos, mercados, teatros, bancos y consulados) a finales del siglo XIX. Ilustra cómo el puerto organizó sus funciones institucionales y financieras en la zona baja del plan, creando hitos arquitectónicos monumentales producto de la bonanza del salitre y el comercio marítimo internacional.",
+                stats: [
+                    { label: "Mercados Principales", val: "3" },
+                    { label: "Bancos & Consulados", val: "+28" },
+                    { label: "Teatros Activos", val: "5" }
+                ],
+                center: [-33.045, -71.620],
+                zoom: 14,
+                pois: [
+                    { name: "Mercado Cardonal", lat: -33.0442, lng: -71.6148, desc: "Centro neurálgico del abastecimiento hortofrutícola del puerto." },
+                    { name: "Bolsa de Comercio de Valparaíso", lat: -33.0388, lng: -71.6282, desc: "Sede de transacciones financieras y del comercio exterior." },
+                    { name: "Teatro Victoria", lat: -33.0462, lng: -71.6180, desc: "El gran coliseo cultural de la ciudad a fines del siglo XIX." },
+                    { name: "Muelle Prat y Aduana", lat: -33.0365, lng: -71.6280, desc: "Puerta de entrada marítima de mercancías y pasajeros." }
+                ]
+            },
+            {
+                id: "map3",
+                category: "transporte",
+                year: "1897",
+                title: "3. Red de Transporte Histórica (1897)",
+                source: "Plano Urbano de Garnham & Archivo Ferroviario",
+                author: "Dirección de Ferrocarriles del Estado / Tranvías de Valparaíso",
+                description: "Muestra el sofisticado sistema de movilidad que conectaba la ciudad en 1897. Incluye la red de tranvías urbanos ('carros de sangre' de tracción animal y sus primeras electrificaciones), la línea del Ferrocarril del Estado que unía la estación Puerto con Barón y el interior del país, y la red vertical de ascensores funiculares que salvaban los quebrados acantilados de los cerros.",
+                stats: [
+                    { label: "Ascensores en 1897", val: "14 Operativos" },
+                    { label: "Líneas de Tranvía", val: "22 km" },
+                    { label: "Estaciones Tren", val: "Puerto / Barón" }
+                ],
+                center: [-33.043, -71.620],
+                zoom: 14,
+                pois: [
+                    { name: "Ascensor Concepción (1883)", lat: -33.0410, lng: -71.6268, desc: "El primer ascensor inaugurado en Valparaíso." },
+                    { name: "Ascensor Cordillera (1887)", lat: -33.0375, lng: -71.6310, desc: "Conecta la Plaza Serrano con el Cerro Cordillera." },
+                    { name: "Ascensor Artillería (1893)", lat: -33.0345, lng: -71.6300, desc: "Funicular de vía doble con espectacular vista a la bahía." },
+                    { name: "Estación Barón (EFE)", lat: -33.0428, lng: -71.6050, desc: "Término del ferrocarril de Santiago a Valparaíso." }
+                ],
+                lines: [
+                    {
+                        name: "Línea Ferrocarril del Estado",
+                        color: "#0284c7",
+                        coords: [
+                            [-33.0370, -71.6270],
+                            [-33.0385, -71.6200],
+                            [-33.0410, -71.6120],
+                            [-33.0428, -71.6050]
+                        ]
+                    },
+                    {
+                        name: "Ruta Carros de Sangre (Calle Condell / Victoria)",
+                        color: "#eab308",
+                        coords: [
+                            [-33.0385, -71.6280],
+                            [-33.0425, -71.6240],
+                            [-33.0458, -71.6190],
+                            [-33.0442, -71.6148]
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "map4",
+                category: "desastre",
+                year: "1906",
+                title: "4. Terremoto, Incendio y Testimonios (1906)",
+                source: "Testimonios históricos (Rodríguez y Gajardo, 1906) & Archivo Fotográfico",
+                author: "Comisión de Reconstrucción de Valparaíso (1906)",
+                description: "Visor territorial que georreferencia los estragos del devastador terremoto del 16 de agosto de 1906 (magnitud estimada 8.2 Mw) y la gigantesca tormenta de fuego que arrasó durante tres días el barrio El Almendral. Contiene marcadores con relatos geolocalizados de supervivientes, zonas de derrumbe masivo de edificios de albañilería y registros fotográficos de las ruinas.",
+                stats: [
+                    { label: "Magnitud Sismo", val: "8.2 Mw" },
+                    { label: "Duración Fuego", val: "3 Días Seguidos" },
+                    { label: "Víctimas Est.", val: "+3.000 fallecidos" }
+                ],
+                center: [-33.045, -71.618],
+                zoom: 14,
+                pois: [
+                    { name: "Iglesia del Espíritu Santo (Derrumbada)", lat: -33.0450, lng: -71.6200, desc: "Colapso total de la torre sobre la Plaza Victoria durante el primer remezón." },
+                    { name: "Foco de Incendio El Almendral", lat: -33.0460, lng: -71.6160, desc: "Fuego iniciado por ruptura de tuberías de gas e incendios intencionados." },
+                    { name: "Campamento de Refugiados Plaza Sotomayor", lat: -33.0382, lng: -71.6288, desc: "Miles de damnificados acamparon a la intemperie frente al puerto." }
+                ],
+                polygons: [
+                    {
+                        name: "Zona de Gran Incendio (El Almendral)",
+                        color: "#dc2626",
+                        coords: [
+                            [-33.0435, -71.6210],
+                            [-33.0485, -71.6180],
+                            [-33.0470, -71.6060],
+                            [-33.0420, -71.6090]
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "map5",
+                category: "desastre",
+                year: "1906-1907",
+                title: "5. Atención Médica frente al Sismo de 1906",
+                source: "Dr. José Grossi: 'El Terremoto de Valparaíso: Relación Médica e Higiénica' (1907)",
+                author: "Junta Central de Salubridad & Dr. José Grossi",
+                description: "Cartografía de la respuesta médica y sanitaria desplegada tras la catástrofe de 1906. Identifica los hospitales colapsados o evacuados, los puestos de primeros auxilios improvisados en plazas públicas, los lazaretos de aislamiento contra la peste y viruela, y las estaciones de desinfección desplegadas por las autoridades para contener epidemias en los campamentos de emergencia.",
+                stats: [
+                    { label: "Hospitales Sanitarios", val: "6 Puestos" },
+                    { label: "Vacunados Viruela", val: "+50.000" },
+                    { label: "Puestos de Socorro", val: "12 En el Plan" }
+                ],
+                center: [-33.044, -71.622],
+                zoom: 14,
+                pois: [
+                    { name: "Hospital San Juan de Dios (Evacuado)", lat: -33.0495, lng: -71.6110, desc: "Gravemente dañado; los enfermos fueron trasladados a carpas en patios." },
+                    { name: "Lazareto de Playa Ancha", lat: -33.0330, lng: -71.6420, desc: "Centro sanitario para aislamiento de enfermedades infecciosas post-sismo." },
+                    { name: "Puesto de Socorro Plaza Victoria", lat: -33.0458, lng: -71.6190, desc: "Atención de urgencia, amputaciones de emergencia y distribución de suero." },
+                    { name: "Hospital Alemán (Cerro Alegre)", lat: -33.0420, lng: -71.6320, desc: "Mantuvo atención continua para heridos de los cerros occidentales." }
+                ]
+            },
+            {
+                id: "map6",
+                category: "seguros",
+                year: "1906-1908",
+                title: "6. Juicios de Compañías de Seguros y Reclamos",
+                source: "Archivo Judicial de Valparaíso & Compañías Aseguradoras Británicas/Alemanas",
+                author: "Cuerpo de Peritos Tasadores de Seguros",
+                description: "Georreferenciación de las manzanas incendiadas y los montos reclamados ante las compañías de seguros inglesas y alemanas (como Liverpool & London & Globe, Sun Fire Office). Visualiza el encendido debate jurídico posterior al desastre: las aseguradoras se negaban a pagar argumentando que las pérdidas fueron causadas por el sismo y no por fuego directo.",
+                stats: [
+                    { label: "Manzanas Reclamadas", val: "84 Manzanas" },
+                    { label: "Monto Asegurado", val: "+£ 4.500.000" },
+                    { label: "Litigios Judiciales", val: "2 Años de Juicio" }
+                ],
+                center: [-33.043, -71.620],
+                zoom: 14,
+                pois: [
+                    { name: "Manzana Financiera Calle Prat", lat: -33.0385, lng: -71.6280, desc: "Siniestros por edificios bancarios y firmas importadoras de capital inglés." },
+                    { name: "Manzana Comercial Calle Victoria", lat: -33.0455, lng: -71.6170, desc: "Pérdidas totales en bodegas de grandes almacenes de telas y alimentos." },
+                    { name: "Consulado Británico (Tribunal Arbitral)", lat: -33.0395, lng: -71.6285, desc: "Sede de reuniones entre damnificados chilenos y ajustadores británicos." }
+                ],
+                polygons: [
+                    {
+                        name: "Bloque Comercial Calle Blanco (Asegurado)",
+                        color: "#10b981",
+                        coords: [
+                            [-33.0375, -71.6290],
+                            [-33.0395, -71.6270],
+                            [-33.0410, -71.6250],
+                            [-33.0390, -71.6275]
+                        ]
+                    },
+                    {
+                        name: "Bloque Almendral (Siniestro en Litigio)",
+                        color: "#f59e0b",
+                        coords: [
+                            [-33.0440, -71.6200],
+                            [-33.0465, -71.6175],
+                            [-33.0450, -71.6140],
+                            [-33.0425, -71.6165]
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "map7",
+                category: "seguros",
+                year: "1918-1949",
+                title: "7. Vulnerabilidad de Inmuebles y Muros Cortafuegos",
+                source: "Planos de Tarificación de la Asociación de Aseguradores de Chile (1949)",
+                author: "Asociación de Aseguradores de Chile (AOCH)",
+                description: "Muestra el mapa de tarificación de riesgo de incendios construido parcela por parcela entre 1918 y 1949. Detalla la materialidad de la edificación (adobe, guano con quincha, albañilería y primeros edificios en hormigón armado) e identifica la obligatoria presencia de muros cortafuegos sobresalientes para evitar la propagación de brasas entre propiedades linderas.",
+                stats: [
+                    { label: "Muros Cortafuegos", val: "Georreferenciados" },
+                    { label: "Material Predominante", val: "Albañilería / Madera" },
+                    { label: "Riesgo de Fuegos", val: "Clasificación A-D" }
+                ],
+                center: [-33.043, -71.621],
+                zoom: 14,
+                pois: [
+                    { name: "Edificio de Hormigón Armado (Bajo Riesgo)", lat: -33.0400, lng: -71.6270, desc: "Construcción moderna post-1906 con muros ignífugos integrales." },
+                    { name: "Sector de Quincha y Guano (Alto Riesgo)", lat: -33.0430, lng: -71.6310, desc: "Viviendas populares en ladera con tabiquería combustible tradicional." },
+                    { name: "Almacenes con Muro Sombrerero", lat: -33.0450, lng: -71.6175, desc: "Muros sobrepasaban en 1 metro la techumbre de zinc para frenar el fuego." }
+                ]
+            },
+            {
+                id: "map8",
+                category: "patrimonio",
+                year: "Actualidad",
+                title: "8. Patrimonio Protegido Valparaíso",
+                source: "Consejo de Monumentos Nacionales & UNESCO (2003)",
+                author: "Ministerio de las Culturas, las Artes y el Patrimonio",
+                description: "Visor de la protección patrimonial legal vigente en Valparaíso. Delimita el polígono del Sitio del Patrimonio Mundial 'Barrio Histórico de la Ciudad Portuaria de Valparaíso' inscrito por la UNESCO en 2003, junto con la Zona de Amortiguamiento, Monumentos Históricos Nacionales (edificios públicos, ascensores) e Inmuebles de Conservación Histórica.",
+                stats: [
+                    { label: "Declaratoria UNESCO", val: "Año 2003" },
+                    { label: "Superficie Núcleo", val: "23,2 Hectáreas" },
+                    { label: "Zona Amortiguación", val: "44,5 Hectáreas" }
+                ],
+                center: [-33.039, -71.628],
+                zoom: 15,
+                pois: [
+                    { name: "Iglesia La Matriz (MHN)", lat: -33.0358, lng: -71.6315, desc: "Monumento Histórico Nacional en el corazón del casco fundador." },
+                    { name: "Edificio Armada de Chile", lat: -33.0382, lng: -71.6288, desc: "Antigua Intendencia de Valparaíso (inaugurada en 1910)." },
+                    { name: "Paseo Yugoslavo y Palacio Baburizza", lat: -33.0402, lng: -71.6295, desc: "Núcleo de la arquitectura residencial protegida del Cerro Alegre." },
+                    { name: "Ascensor El Peral", lat: -33.0392, lng: -71.6295, desc: "Monumento Histórico que conecta Plaza Sotomayor con Cerro Alegre." }
+                ],
+                polygons: [
+                    {
+                        name: "Polígono Sitio UNESCO (Barrio Histórico)",
+                        color: "#d97706",
+                        coords: [
+                            [-33.0345, -71.6335],
+                            [-33.0425, -71.6310],
+                            [-33.0420, -71.6245],
+                            [-33.0360, -71.6260]
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "map9",
+                category: "patrimonio",
+                year: "1897 - Actual",
+                title: "9. Visor General y Plano Georreferenciado de Garnham (1897)",
+                source: "Plano Topográfico y Urbano de Francisco E. Garnham (1897)",
+                author: "ArcGIS StoryMap Valparaíso / Georreferenciación Histórica",
+                description: "Plataforma integradora principal que permite comparar el histórico plano urbano trazado por Francisco E. Garnham en 1897 con la trama urbana actual de la ciudad. Permite apreciar el enorme avance del terreno ganado al mar (rellenos del malecón marítimo) y superponer capas históricas de la transformación del puerto.",
+                stats: [
+                    { label: "Precisión Cartográfica", val: "Alta Georreferencia" },
+                    { label: "Avance Costero", val: "+180m de Relleno" },
+                    { label: "Capas Comparativas", val: "Multi-Temporal" }
+                ],
+                center: [-33.0472, -71.6127],
+                zoom: 14,
+                pois: [
+                    { name: "Línea de Costa Antigua (1897)", lat: -33.0380, lng: -71.6270, desc: "Antiguo borde marítimo antes de las obras del puerto moderno." },
+                    { name: "Muelle de Pasajeros Histórico", lat: -33.0368, lng: -71.6275, desc: "Ubicación del muelle original de desembarco." },
+                    { name: "Plaza Sotomayor (Trazado Garnham)", lat: -33.0382, lng: -71.6288, desc: "Configuración previa a las remodelaciones del siglo XX." }
+                ],
+                lines: [
+                    {
+                        name: "Antigua Línea del Borde Costero (1897)",
+                        color: "#ef4444",
+                        coords: [
+                            [-33.0340, -71.6330],
+                            [-33.0370, -71.6290],
+                            [-33.0400, -71.6210],
+                            [-33.0418, -71.6060]
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Global store for Leaflet map objects
+        const mapInstances = {};
+        let activeCategory = 'all';
+
+        // Run `python server.py` to use CARTODB_API_KEY through the local proxy.
+        // Direct file opens also use the proxy; CARTO now requires a basemap key.
+        const cartoProxyOrigin = location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+        const tileProviders = {
+            voyager: `${cartoProxyOrigin}/carto-tiles/voyager/{z}/{x}/{y}{r}.png?v=2`,
+            osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        };
+
+        const tileAttributions = {
+            voyager: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            osm: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            esri: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        };
+
+        // Render two-column table dynamically
+        function renderMapsTable() {
+            const container = document.getElementById('mapsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            mapsData.forEach((mapItem) => {
+                const tr = document.createElement('tr');
+                tr.className = `map-row border-b border-slate-800/80 hover:bg-slate-900/40 transition flex flex-col md:table-row`;
+                tr.setAttribute('data-category', mapItem.category);
+                tr.setAttribute('data-id', mapItem.id);
+
+                const statsHtml = mapItem.stats ? mapItem.stats.map(s => `
+                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">${s.label}</div>
+                        <div class="text-xs font-bold text-amber-400">${s.val}</div>
+                    </div>
+                `).join('') : '';
+
+                const poisHtml = mapItem.pois ? mapItem.pois.map(poi => `
+                    <button onclick="focusPoi('${mapItem.id}', ${poi.lat}, ${poi.lng}, '${escapeQuotes(poi.name)}')" 
+                        class="px-2.5 py-1 bg-slate-800 hover:bg-amber-500/20 hover:border-amber-500/50 border border-slate-700 text-slate-300 hover:text-amber-300 rounded text-xs transition flex items-center gap-1.5 text-left">
+                        <i class="fa-solid fa-location-dot text-amber-500 text-[10px]"></i>
+                        <span>${poi.name}</span>
+                    </button>
+                `).join('') : '';
+
+                tr.innerHTML = `
+                    <!-- LEFT COLUMN: INTERACTIVE MAP -->
+                    <td class="p-4 md:p-6 w-full md:w-1/2 align-top">
+                        <div class="relative rounded-xl overflow-hidden border border-slate-700/70 bg-slate-950 shadow-xl group">
+                            <div id="leaflet-${mapItem.id}" class="w-full h-[360px] md:h-[420px] z-10"></div>
+                            <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
+                                <div class="bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-md border border-slate-700/70 text-xs font-semibold text-amber-400 pointer-events-auto flex items-center gap-2 shadow">
+                                    <i class="fa-solid fa-layer-group"></i> ${mapItem.year}
+                                </div>
+                                <div class="flex items-center gap-1 pointer-events-auto">
+                                    <select onchange="changeMapTile('${mapItem.id}', this.value)" class="bg-slate-900/90 backdrop-blur-md text-slate-200 border border-slate-700 text-xs rounded-md px-2 py-1 outline-none cursor-pointer">
+                                        <option value="osm" selected>OpenStreetMap</option>
+                                        <option value="voyager">CARTO Voyager</option>
+                                        <option value="esri">Esri Satélite</option>
+                                        
+                                    </select>
+                                    <button onclick="resetMapView('${mapItem.id}')" title="Restablecer Vista" class="bg-slate-900/90 backdrop-blur-md text-slate-200 border border-slate-700 hover:bg-slate-800 p-1.5 rounded-md text-xs transition">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                    <button onclick="openFullscreenModal('${mapItem.id}')" title="Pantalla Completa" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold p-1.5 rounded-md text-xs transition">
+                                        <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- RIGHT COLUMN: CONTEXT & DESCRIPTION -->
+                    <td class="p-4 md:p-6 w-full md:w-1/2 align-top space-y-4 border-t md:border-t-0 border-slate-800">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                                ${mapItem.category.toUpperCase()}
+                            </span>
+                            <span class="text-xs font-mono text-slate-400">
+                                <i class="fa-solid fa-calendar me-1"></i>${mapItem.year}
+                            </span>
+                        </div>
+
+                        <h3 class="font-heading text-xl font-bold text-amber-400 leading-snug">
+                            ${mapItem.title}
+                        </h3>
+
+                        <div class="text-xs text-slate-400 space-y-1 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/80">
+                            <div><strong class="text-slate-300"><i class="fa-solid fa-book-bookmark me-1 text-amber-500"></i>Fuente:</strong> ${mapItem.source}</div>
+                            <div><strong class="text-slate-300"><i class="fa-solid fa-user-pen me-1 text-amber-500"></i>Autor/Entidad:</strong> ${mapItem.author}</div>
+                        </div>
+
+                        <p class="text-slate-300 text-xs md:text-sm leading-relaxed">
+                            ${mapItem.description}
+                        </p>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            ${statsHtml}
+                        </div>
+
+                        ${poisHtml ? `
+                        <div class="pt-2 space-y-2">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-crosshairs text-amber-400"></i> Hitos Georreferenciados (Haz clic para enfocar):
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${poisHtml}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </td>
+                `;
+
+                container.appendChild(tr);
+
+                // Initialize map instance
+                initLeafletMap(mapItem);
+            });
+        }
+
+        // Initialize Leaflet map
+        function initLeafletMap(mapItem) {
+            const containerId = `leaflet-${mapItem.id}`;
+            const elem = document.getElementById(containerId);
+            if (!elem) return;
+
+            const map = L.map(containerId, {
+                center: mapItem.center,
+                zoom: mapItem.zoom,
+                zoomControl: true,
+                attributionControl: true
+            });
+
+            const baseTile = L.tileLayer(tileProviders.osm, {
+                maxZoom: 19,
+                subdomains: 'abc',
+                attribution: tileAttributions.osm
+            }).addTo(map);
+
+            mapInstances[mapItem.id] = {
+                map: map,
+                tileLayer: baseTile,
+                defaultCenter: mapItem.center,
+                defaultZoom: mapItem.zoom,
+                markers: []
+            };
+
+            const goldIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="w-6 h-6 rounded-full bg-amber-500 border-2 border-slate-950 shadow-lg flex items-center justify-center text-slate-950 text-xs font-bold animate-pulse"><i class="fa-solid fa-location-dot"></i></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            if (mapItem.pois) {
+                mapItem.pois.forEach(poi => {
+                    const marker = L.marker([poi.lat, poi.lng], { icon: goldIcon }).addTo(map);
+                    marker.bindPopup(`
+                        <div class="p-1 space-y-1">
+                            <h4 class="font-bold text-amber-400 text-sm border-b border-slate-700 pb-1">${poi.name}</h4>
+                            <p class="text-xs text-slate-200 leading-snug">${poi.desc}</p>
+                            <div class="text-[10px] text-slate-400 pt-1 font-mono">${poi.lat.toFixed(4)}, ${poi.lng.toFixed(4)}</div>
+                        </div>
+                    `);
+                    mapInstances[mapItem.id].markers.push({ name: poi.name, marker: marker, lat: poi.lat, lng: poi.lng });
+                });
+            }
+
+            if (mapItem.polygons) {
+                mapItem.polygons.forEach(poly => {
+                    const polygon = L.polygon(poly.coords, {
+                        color: poly.color || '#d97706',
+                        fillColor: poly.color || '#d97706',
+                        fillOpacity: 0.35,
+                        weight: 2
+                    }).addTo(map);
+                    polygon.bindPopup(`<strong class="text-amber-400 text-xs">${poly.name}</strong>`);
+                });
+            }
+
+            if (mapItem.lines) {
+                mapItem.lines.forEach(line => {
+                    const polyline = L.polyline(line.coords, {
+                        color: line.color || '#3b82f6',
+                        weight: 4,
+                        opacity: 0.85,
+                        dashArray: line.name.includes('Tranvía') ? '6, 6' : null
+                    }).addTo(map);
+                    polyline.bindPopup(`<strong class="text-slate-100 text-xs">${line.name}</strong>`);
+                });
+            }
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
+        }
+
+        // Change base map tiles
+        function changeMapTile(mapId, tileType) {
+            const instance = mapInstances[mapId];
+            if (!instance) return;
+
+            if (instance.tileLayer) {
+                instance.map.removeLayer(instance.tileLayer);
+            }
+
+            const newUrl = tileProviders[tileType] || tileProviders.osm;
+            const newAttr = tileAttributions[tileType] || tileAttributions.osm;
+
+            instance.tileLayer = L.tileLayer(newUrl, {
+                maxZoom: 19,
+                subdomains: 'abc',
+                attribution: newAttr
+            }).addTo(instance.map);
+        }
+
+        // Reset view back to initial center
+        function resetMapView(mapId) {
+            const instance = mapInstances[mapId];
+            if (!instance) return;
+            instance.map.flyTo(instance.defaultCenter, instance.defaultZoom, { duration: 1 });
+            instance.map.closePopup();
+        }
+
+        // Click handler for POI buttons
+        function focusPoi(mapId, lat, lng, poiName) {
+            const instance = mapInstances[mapId];
+            if (!instance) return;
+
+            instance.map.flyTo([lat, lng], 16, { duration: 1.2 });
+            
+            const target = instance.markers.find(m => Math.abs(m.lat - lat) < 0.0001 && Math.abs(m.lng - lng) < 0.0001);
+            if (target && target.marker) {
+                setTimeout(() => {
+                    target.marker.openPopup();
+                }, 1300);
+            }
+        }
+
+        // Category Filter handler
+        function setCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.getAttribute('data-cat') === cat) {
+                    btn.className = 'cat-btn active px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-amber-500 text-slate-950 font-semibold';
+                } else {
+                    btn.className = 'cat-btn px-3 py-1.5 rounded-md font-medium transition whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700';
+                }
+            });
+            filterMaps();
+        }
+
+        // Live text search and category filter
+        function filterMaps() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.map-row');
+
+            rows.forEach(row => {
+                const cat = row.getAttribute('data-category');
+                const text = row.innerText.toLowerCase();
+
+                const matchesCat = (activeCategory === 'all' || cat === activeCategory);
+                const matchesSearch = text.includes(query);
+
+                if (matchesCat && matchesSearch) {
+                    row.style.display = 'table-row';
+                    const mapId = row.getAttribute('data-id');
+                    if (mapInstances[mapId]) {
+                        setTimeout(() => mapInstances[mapId].map.invalidateSize(), 100);
+                    }
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Fullscreen Modal Logic
+        let modalMap = null;
+        function openFullscreenModal(mapId) {
+            const mapItem = mapsData.find(m => m.id === mapId);
+            if (!mapItem) return;
+
+            const modal = document.getElementById('fullMapModal');
+            document.getElementById('modalMapTitle').innerText = `${mapItem.title} - Vista Pantalla Completa`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const container = document.getElementById('modalMapContainer');
+            container.innerHTML = `<div id="leaflet-modal-map" class="w-full h-full"></div>`;
+
+            modalMap = L.map('leaflet-modal-map', {
+                center: mapItem.center,
+                zoom: mapItem.zoom + 1,
+                attributionControl: true
+            });
+
+            L.tileLayer(tileProviders.osm, { 
+                maxZoom: 19,
+                attribution: tileAttributions.osm 
+            }).addTo(modalMap);
+
+            const goldIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="w-7 h-7 rounded-full bg-amber-500 border-2 border-slate-950 shadow-lg flex items-center justify-center text-slate-950 text-sm font-bold"><i class="fa-solid fa-location-dot"></i></div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            if (mapItem.pois) {
+                mapItem.pois.forEach(poi => {
+                    L.marker([poi.lat, poi.lng], { icon: goldIcon })
+                        .addTo(modalMap)
+                        .bindPopup(`<strong class="text-amber-400">${poi.name}</strong><br><span class="text-xs text-slate-200">${poi.desc}</span>`);
+                });
+            }
+
+            if (mapItem.polygons) {
+                mapItem.polygons.forEach(poly => {
+                    L.polygon(poly.coords, { color: poly.color, fillColor: poly.color, fillOpacity: 0.35 }).addTo(modalMap);
+                });
+            }
+
+            if (mapItem.lines) {
+                mapItem.lines.forEach(line => {
+                    L.polyline(line.coords, { color: line.color, weight: 4 }).addTo(modalMap);
+                });
+            }
+
+            setTimeout(() => {
+                modalMap.invalidateSize();
+            }, 200);
+        }
+
+        function closeFullscreenModal() {
+            const modal = document.getElementById('fullMapModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (modalMap) {
+                modalMap.remove();
+                modalMap = null;
+            }
+        }
+
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'");
+        }
+
+        // Initialize page on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMapsTable();
+        });
+
+        // Window resize trigger map readjustments
+        window.addEventListener('resize', () => {
+            Object.values(mapInstances).forEach(inst => {
+                if (inst.map) inst.map.invalidateSize();
+            });
+        });
+    </script>
+</body>
+</html>
